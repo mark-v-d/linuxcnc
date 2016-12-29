@@ -3,6 +3,9 @@
 #include "rtapi_uspace.hh"
 #include <posix/pthread.h>
 #include <atomic>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
 #ifdef HAVE_SYS_IO_H
 #include <sys/io.h>
 #endif
