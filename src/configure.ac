@@ -304,8 +304,9 @@ if test "$RTS" = uspace || test -z "$RTS" -a "$RTAI_CONFIG" = "none" ; then
   else
     USPACE_XENOMAI=+xenomai
     CONFIG_USPACE_XENOMAI=y
-    XENOMAI_CFLAGS=`$XENOMAI_CONFIG --skin posix --cflags`
-    XENOMAI_LDFLAGS=`$XENOMAI_CONFIG --skin posix --ldflags`
+    XENOMAI_CFLAGS=`$XENOMAI_CONFIG --auto-init-solib --skin posix --cflags --mode-check`
+    XENOMAI_LDFLAGS=`$XENOMAI_CONFIG --auto-init-solib --skin posix --ldflags --mode-check`
+    XENOMAI_LDFLAGS="$XENOMAI_LDFLAGS -lanalogy"
     AC_DEFINE([USPACE_XENOMAI], [], [Define if uspace realtime should optionally support Xenomai])
   fi
   AC_SUBST([CONFIG_USPACE_XENOMAI])

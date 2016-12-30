@@ -498,28 +498,30 @@ get_fifo_path(char *buf, size_t bufsize) {
 }
 
 int main(int argc, char **argv) {
-    if(getuid() == 0) {
-        char *fallback_uid_str = getenv("RTAPI_UID");
-        int fallback_uid = fallback_uid_str ? atoi(fallback_uid_str) : 0;
-        if(fallback_uid == 0)
-        {
-            fprintf(stderr,
-                "Refusing to run as root without fallback UID specified\n"
-                "To run under a debugger with I/O, use e.g.,\n"
-                "    sudo env RTAPI_UID=`id -u` RTAPI_FIFO_PATH=$HOME/.rtapi_fifo gdb " EMC2_BIN_DIR "/rtapi_app\n");
-            exit(1);
-        }
-        setreuid(fallback_uid, 0);
-        fprintf(stderr,
-            "Running with fallback_uid.  getuid()=%d geteuid()=%d\n",
-            getuid(), geteuid());
-    }
-    ruid = getuid();
-    euid = geteuid();
-    setresuid(euid, euid, ruid);
+    if(!detect_xenomai()) {
+	if(getuid() == 0) {
+	    char *fallback_uid_str = getenv("RTAPI_UID");
+	    int fallback_uid = fallback_uid_str ? atoi(fallback_uid_str) : 0;
+	    if(fallback_uid == 0)
+	    {
+		fprintf(stderr,
+		    "Refusing to run as root without fallback UID specified\n"
+		    "To run under a debugger with I/O, use e.g.,\n"
+		    "    sudo env RTAPI_UID=`id -u` RTAPI_FIFO_PATH=$HOME/.rtapi_fifo gdb " EMC2_BIN_DIR "/rtapi_app\n");
+		exit(1);
+	    }
+	    setreuid(fallback_uid, 0);
+	    fprintf(stderr,
+		"Running with fallback_uid.  getuid()=%d geteuid()=%d\n",
+		getuid(), geteuid());
+	}
+	ruid = getuid();
+	euid = geteuid();
+	setresuid(euid, euid, ruid);
 #ifdef __linux__
-    setfsuid(ruid);
+	setfsuid(ruid);
 #endif
+    }
     vector<string> args;
     for(int i=1; i<argc; i++) { args.push_back(string(argv[i])); }
 
@@ -774,17 +776,22 @@ static int harden_rt()
 
 static RtapiApp *makeApp()
 {
-    if(euid != 0 || harden_rt() < 0)
-    {
-        rtapi_print_msg(RTAPI_MSG_ERR, "Note: Using POSIX non-realtime\n");
-        return new Posix(SCHED_OTHER);
-    }
-    WithRoot r;
+    std::unique_ptr<WithRoot> with_root;
+
     void *dll = nullptr;
     if(detect_xenomai()) {
         dll = dlopen(EMC2_HOME "/lib/libuspace-xenomai.so.0", RTLD_NOW);
         if(!dll) fprintf(stderr, "dlopen: %s\n", dlerror());
-    } else if(detect_rtai()) {
+    }
+
+    if(!dll && (euid != 0 || harden_rt() < 0))
+    {
+        rtapi_print_msg(RTAPI_MSG_ERR, "Note: Using POSIX non-realtime\n");
+        return new Posix(SCHED_OTHER);
+    }
+
+    if(detect_rtai()) {
+	with_root=std::make_unique<WithRoot>();
         dll = dlopen(EMC2_HOME "/lib/libuspace-rtai.so.0", RTLD_NOW);
         if(!dll) fprintf(stderr, "dlopen: %s\n", dlerror());
     }

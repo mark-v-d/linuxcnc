@@ -2,19 +2,27 @@
 #include "rtapi.h"
 #include "rtapi_uspace.hh"
 #include <posix/pthread.h>
+#include <time.h>
 #include <atomic>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <signal.h>
 #ifdef HAVE_SYS_IO_H
 #include <sys/io.h>
 #endif
+#include <sys/syscall.h>
 
-namespace
+#define gettid() syscall(__NR_gettid)
+#define sigev_notify_thread_id _sigev_un._tid
+
+#include "uspace_xenomai.hh"
+
+namespace uspace_xenomai
 {
-struct RtaiTask : rtapi_task {
-    RtaiTask() : rtapi_task{}, cancel{}, thr{} {}
-    std::atomic<int> cancel;
-    pthread_t thr;
-};
 
+pthread_once_t key_once;
+pthread_key_t key;
 
 struct XenomaiApp : RtapiApp {
     XenomaiApp() : RtapiApp(SCHED_FIFO) {
@@ -75,15 +83,24 @@ struct XenomaiApp : RtapiApp {
         auto task = reinterpret_cast<RtaiTask*>(arg);
         pthread_setspecific(key, arg);
 
-        struct timespec now;
-        clock_gettime(CLOCK_MONOTONIC, &now);
+        struct sigevent ev;
+        ev.sigev_notify=SIGEV_THREAD_ID;
+	ev.sigev_signo=SIGALRM;
+        ev.sigev_notify_thread_id=gettid();
+        if(timer_create(CLOCK_MONOTONIC, &ev, &task->timer)) {
+		rtapi_print("Cannot create timer for task %d\n", task->id);
+		return nullptr;
+        }
 
-        // originally, I used pthread_make_periodic_np here, and
-        // pthread_wait_np in wait(), but in about 1 run in 50 this led to
-        // "xenomai: watchdog triggered" and rtapi_app was killed.
-        //
-        // encountered on: 3.18.20-xenomai-2.6.5 with a 2-thread SMP system
-        rtapi_timespec_advance(task->nextstart, now, task->period);
+	struct itimerspec its;
+	its.it_value.tv_sec=0;
+	its.it_value.tv_nsec=task->period;
+	its.it_interval.tv_sec=0;
+	its.it_interval.tv_nsec=task->period;
+	if(timer_settime(task->timer, 0, &its, NULL)) {
+		rtapi_print("Cannot set timer for task %d\n", task->id);
+		return nullptr;
+	}
 
         (task->taskcode) (task->arg);
 
@@ -100,24 +117,19 @@ struct XenomaiApp : RtapiApp {
     }
 
     void wait() {
-        int task_id = task_self();
-        auto task = ::rtapi_get_task<RtaiTask>(task_id);
-        if(task->cancel) {
+        auto task = ::rtapi_get_task<RtaiTask>(task_self());
+
+        int sigs;
+        sigset_t sigset;
+        sigemptyset(&sigset);
+        sigaddset(&sigset, SIGALRM);
+        if(sigwait(&sigset, &sigs)<0)
+            rtapi_print("sigwait failed for task %d\n", task->id);
+
+	if(timer_getoverrun(task->timer))
+		unexpected_realtime_delay(task);
+        if(task->cancel)
             pthread_exit(nullptr);
-        }
-        rtapi_timespec_advance(task->nextstart, task->nextstart, task->period);
-        struct timespec now;
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        if(rtapi_timespec_less(task->nextstart, now))
-        {
-            if(policy == SCHED_FIFO)
-                unexpected_realtime_delay(task);
-        }
-        else
-        {
-            int res = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &task->nextstart, nullptr);
-            if(res < 0) perror("clock_nanosleep");
-        }
     }
 
     unsigned char do_inb(unsigned int port) {
@@ -143,8 +155,6 @@ struct XenomaiApp : RtapiApp {
         return task->id;
     }
 
-    static pthread_once_t key_once;
-    static pthread_key_t key;
     static void init_key(void) {
         pthread_key_create(&key, NULL);
     }
@@ -161,13 +171,11 @@ struct XenomaiApp : RtapiApp {
     }
 };
 
-pthread_once_t XenomaiApp::key_once;
-pthread_key_t XenomaiApp::key;
 }
 
 extern "C" RtapiApp *make();
 
 RtapiApp *make() {
     rtapi_print_msg(RTAPI_MSG_ERR, "Note: Using XENOMAI (posix-skin) realtime\n");
-    return new XenomaiApp;
+    return new uspace_xenomai::XenomaiApp;
 }
