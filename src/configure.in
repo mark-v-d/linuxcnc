@@ -166,7 +166,7 @@ RTPREFIX=""
 KERNELDIR=""
 RTFLAGS=""
 
-NONDISTRIBUTABLE=false
+NONDISTRIBUTABLE=true
 AC_ARG_ENABLE(non-distributable,
     AS_HELP_STRING(
         [--enable-non-distributable],
@@ -276,8 +276,8 @@ if test "$RTS" = uspace || test -z "$RTS" -a "$RTAI_CONFIG" = "none" ; then
   else
     USPACE_XENOMAI=+xenomai
     CONFIG_USPACE_XENOMAI=y
-    XENOMAI_CFLAGS=`$XENOMAI_CONFIG --skin posix --cflags`
-    XENOMAI_LDFLAGS=`$XENOMAI_CONFIG --skin posix --ldflags`
+    XENOMAI_CFLAGS=`$XENOMAI_CONFIG --auto-init-solib --skin posix --cflags`
+    XENOMAI_LDFLAGS=`$XENOMAI_CONFIG --auto-init-solib --skin posix --ldflags`
     AC_DEFINE([USPACE_XENOMAI], [], [Define if uspace realtime should optionally support Xenomai])
   fi
   AC_SUBST([CONFIG_USPACE_XENOMAI])
