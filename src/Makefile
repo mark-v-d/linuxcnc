@@ -188,7 +188,7 @@ INCLUDE += -I$(INCLUDEPY)
 
 # Compilation options.	Perhaps some of these should come from Makefile.inc? (CXXFLAGS now does)
 INTEGER_OVERFLOW_FLAGS := -fwrapv
-OPT := -fPIC -Os $(INTEGER_OVERFLOW_FLAGS)
+OPT := -fPIC -O0 $(INTEGER_OVERFLOW_FLAGS)
 DEBUG := $(DEBUG) -g -Wall
 CFLAGS := $(INCLUDE) $(OPT) $(DEBUG) $(EXTRA_DEBUG) -DULAPI -std=gnu99 -fgnu89-inline
 CXXFLAGS := $(INCLUDE) $(CXXFLAGS)   $(EXTRA_DEBUG) -DULAPI $(DEBUG) $(OPT) -Woverloaded-virtual
@@ -984,7 +984,7 @@ motmod-objs += libnml/posemath/sincos.o $(MATHSTUB)
 
 TORTOBJS = $(foreach file,$($(patsubst %.o,%,$(1))-objs), objects/rt$(file))
 ifeq ($(BUILD_SYS),uspace)
-EXTRA_CFLAGS += -fPIC -Os
+EXTRA_CFLAGS += -fPIC 
 RTOBJS := $(sort $(foreach mod,$(obj-m),$(call TORTOBJS,$(mod))))
 
 RTDEPS := $(sort $(RTOBJS:.o=.d))
