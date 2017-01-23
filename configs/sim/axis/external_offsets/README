@@ -1,0 +1,23 @@
+eoffset_demo.ini
+
+Usage:
+  1) Estop OFF  (F1)
+  2) Machine ON (F2)
+  3) HOME All   (Ctrl-Home)
+  4) Explore external offset functionality
+     using the sim_pin gui to alter the
+     per-axis hal pins:
+
+     axis.<*>.eoffset-scale
+     e:<*>counts (=> axis.<*>eoffset-counts)
+
+-------------------------------------------
+Note: The external offset interface is
+similar to the interface for wheel jogging:
+
+Input hal pins:
+  axis.L.enable (bit)
+  axis.L.scale  (float)
+  axis.L.counts (s32)
+
+Requested offset == counts*scale

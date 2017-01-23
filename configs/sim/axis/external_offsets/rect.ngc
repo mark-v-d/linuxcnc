@@ -1,0 +1,21 @@
+  #<xmax> =   10
+  #<ymax> =    5
+#<zdepth> =    0
+  #<feed> =   10
+
+g61
+g0x0y0z0
+;(debug, pause: s to continue)
+;m0
+
+f #<feed>
+g1 x #<xmax>    y #<ymax>
+;g1 z #<zdepth>
+;g1 x #<xmax>    y #<ymax>
+;g1 x-#<xmax>    y #<ymax>
+;g1 x-#<xmax>    y-#<ymax>
+;g1 x #<xmax>    y-#<ymax>
+;g1 x #<xmax>    y 0
+;g0 z 0
+
+m2

@@ -463,7 +463,7 @@ int emcAxisSetMaxPositionLimit(int axis, double limit)
     return retval;
 }
 
-int emcAxisSetMaxVelocity(int axis, double vel)
+int emcAxisSetMaxVelocity(int axis, double vel,double ext_offset_vel)
 {
     CATCH_NAN(std::isnan(vel));
 
@@ -480,6 +480,7 @@ int emcAxisSetMaxVelocity(int axis, double vel)
     emcmotCommand.command = EMCMOT_SET_AXIS_VEL_LIMIT;
     emcmotCommand.axis = axis;
     emcmotCommand.vel = vel;
+    emcmotCommand.ext_offset_vel = ext_offset_vel;
     int retval = usrmotWriteEmcmotCommand(&emcmotCommand);
 
     if (emc_debug & EMC_DEBUG_CONFIG) {
@@ -488,7 +489,7 @@ int emcAxisSetMaxVelocity(int axis, double vel)
     return retval;
 }
 
-int emcAxisSetMaxAcceleration(int axis, double acc)
+int emcAxisSetMaxAcceleration(int axis, double acc,double ext_offset_acc)
 {
     CATCH_NAN(std::isnan(acc));
 
@@ -505,6 +506,7 @@ int emcAxisSetMaxAcceleration(int axis, double acc)
     emcmotCommand.command = EMCMOT_SET_AXIS_ACC_LIMIT;
     emcmotCommand.axis = axis;
     emcmotCommand.acc = acc;
+    emcmotCommand.ext_offset_acc = ext_offset_acc;
     int retval = usrmotWriteEmcmotCommand(&emcmotCommand);
 
     if (emc_debug & EMC_DEBUG_CONFIG) {

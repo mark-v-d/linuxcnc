@@ -193,6 +193,12 @@ static int check_axis_constraint(double target, int id, char *move_type,
     double nl = axes[axis_no].min_pos_limit;
     double pl = axes[axis_no].max_pos_limit;
 
+    double eps = 1e-308;
+
+    if (    (fabs(target) < eps)
+         && (fabs(axes[axis_no].min_pos_limit) < eps)
+         && (fabs(axes[axis_no].max_pos_limit) < eps) ) { return 1;}
+
     if(target < nl) {
         in_range = 0;
         reportError(_("%s move on line %d would exceed %c's %s limit"),
@@ -797,10 +803,11 @@ void emcmotCommandHandler(void *arg, long period)
             } else {
                 // TELEOP  JOG_CONT
                 if (GET_MOTION_ERROR_FLAG()) { break; }
+                // for continuous, set pos_cmd to a big number
 	        if (emcmotCommand->vel > 0.0) {
-		    axis->teleop_tp.pos_cmd = axis->max_pos_limit;
+		    axis->teleop_tp.pos_cmd = axis->max_pos_limit + 1e99;
 	        } else {
-		    axis->teleop_tp.pos_cmd = axis->min_pos_limit;
+		    axis->teleop_tp.pos_cmd = axis->min_pos_limit - 1e99;
 	        }
 	        axis->teleop_tp.max_vel = fabs(emcmotCommand->vel);
 	        axis->teleop_tp.max_acc = axis->acc_limit;
@@ -888,6 +895,8 @@ void emcmotCommandHandler(void *arg, long period)
 	        } else {
 		    tmp1 = axis->teleop_tp.pos_cmd - emcmotCommand->offset;
 	        }
+                // limit checking elsewhere
+#if 0
 	        /* don't jog past limits */
 	        if (tmp1 > axis->max_pos_limit) {
 		    break;
@@ -895,6 +904,7 @@ void emcmotCommandHandler(void *arg, long period)
 	        if (tmp1 < axis->min_pos_limit) {
 		    break;
 	        }
+#endif
 	        axis->teleop_tp.pos_cmd = tmp1;
 	        axis->teleop_tp.max_vel = fabs(emcmotCommand->vel);
 	        axis->teleop_tp.max_acc = axis->acc_limit;
@@ -1007,6 +1017,7 @@ void emcmotCommandHandler(void *arg, long period)
 		SET_MOTION_ERROR_FLAG(1);
 		break;
 	    } else if (!inRange(emcmotCommand->pos, emcmotCommand->id, "Linear")) {
+		reportError(_("invalid params in linear command"));
 		emcmotStatus->commandStatus = EMCMOT_COMMAND_INVALID_PARAMS;
 		tpAbort(&emcmotDebug->coord_tp);
 		SET_MOTION_ERROR_FLAG(1);
@@ -1753,6 +1764,7 @@ void emcmotCommandHandler(void *arg, long period)
 		break;
 	    }
 	    axis->vel_limit = emcmotCommand->vel;
+	    axis->ext_offset_vel_limit = emcmotCommand->ext_offset_vel;
             break;
 
         case EMCMOT_SET_AXIS_ACC_LIMIT:
@@ -1765,6 +1777,7 @@ void emcmotCommandHandler(void *arg, long period)
 		break;
 	    }
 	    axis->acc_limit = emcmotCommand->acc;
+	    axis->ext_offset_acc_limit = emcmotCommand->ext_offset_acc;
             break;
 
         case EMCMOT_SET_AXIS_LOCKING_JOINT:

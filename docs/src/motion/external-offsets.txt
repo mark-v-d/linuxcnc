@@ -1,0 +1,97 @@
+[[cha:external-offsets]]
+
+= External Axis Offsets
+
+Hal pins are provided to offset axis positions during teleop
+(world) jogs and coordinated (gcode) motion.  All joints must
+be homed before external axis offsets are honored.
+
+== Ini file Settings
+
+For each axis letter (*L* in xyzabcuvw):
+
+----
+[AXIS_L]OFFSET_AV_RATIO = value (controls accel/vel for external offsets)
+----
+
+. Allowed values: 0 <= value <= 0.9
+. Disallowed values are replaced with 0.1 with message to stdout
+. Default value:  0 (disables external offset).
+  Consequence: omitted [AXIS_L]OFFSET_AV_RATIO disables external offset for the axis.
+. If nonzero, the  OFFSET_AV_RATIO (*r*), adjusts the normal max vel to preserve [AXIS_L] constraints:
+
+  normal max vel        = (1-r) * MAX_VELOCITY
+  external offset vel   = (  r) * MAX_VELOCITY
+
+  normal max accel      = (1-r) * MAX_ACCELERATIOIN
+  external offset accel = (  r) * MAX_ACCELERATION
+
+== Axis Hal Pins
+
+For each  axis letter (*L* in xyzabcuvw)
+
+. *axis.L.eoffset-enable* Input(bit): enable
+. *axis.L.eoffset-scale*  Input(float): scale factor
+. *axis.L.eoffset-counts* Input(s32): input to counts register
+. *axis.L.eoffset*        Output(float): current external offset
+
+
+== Motion Hal Pins
+
+. *motion.eoffset-limited*  Output(bit): motion inhibited due to soft limit
+
+== Usage
+
+The axis input hal pins (enable,scale,counts) are similar to the
+pins used for wheel jogging.  The value of the
+'axis.L.eoffset-counts' pin is transferred to an internal
+counts register.  This register is reset to zero at each machine
+startup.  The requested external offset is the product of
+the register counts and the value of the
+'axis.L.eoffset-scale' pin.
+
+For testing, it is convenient to simulate a jog wheel using the
+sim_pin gui.  For example:
+
+----
+$ sim_pin axis.z.eoffset-enable axis.z.eoffset-scale axis.z.eoffset-counts
+----
+
+=== Soft Limits
+
+During teleop (world) jogging and coordinated (gcode) motion,
+axis soft limits constrain travel.  When operating at an axis
+limit, the hal pin 'motion.eoffset-limited' is asserted.
+
+Note: When a soft limit is encountered, motion is stopped
+and axis acceleration limits may be violated.
+
+=== Machine-off/Machine-on
+
+When the machine is turned off, the *current position with
+external offsets is maintained* so that there is no
+unexpected motion at turn off or turn on.
+
+At each startup (machine on), the internal counts register for
+each hal pin 'axis.L.eoffset-counts' is zeroed and the
+corresponding hal output pin 'axis.L.eoffset' is reset to zero.
+
+In other words, external offsets are *defined as ZERO at
+each startup* (machine on) regardless of the value of
+the 'axis.L.eoffset-counts' pins.  To avoid confusion, it is
+recommended that all 'axis.L.eoffset-counts' pins are set to
+zero when the machine is off.
+
+== Examples
+
+The sim config 'sim/configs/axis/exernal_offsets/eoffsets_demo.ini'
+demonstrates:
+
+. a cartesian XYZ machine (identity kinematics: x=joint0,y=joint1,z=joint2)
+. sim_pin controls for the axis offset pins: eoffset-scale & eoffset-counts
+. pyvcp panel LED for the pin: motion.eoffset-limited
+. pyvcp panel numeric displays for the motor (joint) commands: joint.N.pos-cm
+. pyvcp panel numeric displays for the axis position commands: axis.L.pos-cmd
+. pyvcp panel numeric displays for the external offsets: axis.L.eoffset
+. script (eoffsets_monitor.tcl) to set axis.L.counts pins to zero at machine off
+

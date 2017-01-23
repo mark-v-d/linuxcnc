@@ -1,0 +1,18 @@
+# existing (basic_sim.tcl) signals:
+net J0:pos-cmd => pyvcp.motor.0-f
+net J1:pos-cmd => pyvcp.motor.1-f
+net J2:pos-cmd => pyvcp.motor.2-f
+
+# controls for demo (from sim_pin setp, no pin source):
+net e:panelx-pos-cmd => axis.x.pos-cmd => pyvcp.x-pos-cmd-f
+net e:panely-pos-cmd => axis.y.pos-cmd => pyvcp.y-pos-cmd-f
+net e:panelz-pos-cmd => axis.z.pos-cmd => pyvcp.z-pos-cmd-f
+
+# controls for demo (from sim_pin setp, no pin source):
+net e:panelx-offset => axis.x.eoffset => pyvcp.x-offset-f
+net e:panely-offset => axis.y.eoffset => pyvcp.y-offset-f
+net e:panelz-offset => axis.z.eoffset => pyvcp.z-offset-f
+
+# pyvcp led:
+net e:limited <= motion.eoffset-limited => pyvcp.limited 
+

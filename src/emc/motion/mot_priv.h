@@ -91,6 +91,11 @@ typedef struct {
     hal_bit_t   *ajog_vel_mode;	/* RPI: true for "velocity mode" jogwheel */
     hal_bit_t   *kb_ajog_active;   /* RPI: executing keyboard jog */
     hal_bit_t   *wheel_ajog_active;/* RPI: executing handwheel jog */
+
+    hal_bit_t   *eoffset_enable;
+    hal_s32_t   *eoffset_counts;
+    hal_float_t *eoffset_scale;
+    hal_float_t *external_offset;
 } axis_hal_t;
 
 /* machine data */
@@ -192,6 +197,7 @@ typedef struct {
     joint_hal_t joint[EMCMOT_MAX_JOINTS];	/* data for each joint */
     axis_hal_t axis[EMCMOT_MAX_AXIS];	        /* data for each axis */
 
+    hal_bit_t   *eoffset_limited; /* ext offsets exceed limit */
 } emcmot_hal_data_t;
 
 /***********************************************************************
