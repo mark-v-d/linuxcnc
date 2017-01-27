@@ -540,6 +540,9 @@ int main(int argc, char **argv) {
     } 
     vector<string> args;
     for(int i=1; i<argc; i++) { args.push_back(string(argv[i])); }
+    seteuid(euid);
+    ruid=0;
+    euid=0;
 
 become_master:
     int fd = socket(PF_UNIX, SOCK_STREAM, 0);
