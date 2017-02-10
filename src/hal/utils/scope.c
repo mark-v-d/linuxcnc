@@ -767,7 +767,7 @@ static void main_window_closed(GtkWidget * widget, gpointer * gdata)
 }
 
 static void set_focus(GtkWindow *window, GtkWidget *widget, gpointer *data) {
-    gtk_window_set_urgency_hint(window, FALSE);
+    // gtk_window_set_urgency_hint(window, FALSE);
 }
 
 static void quit(int sig)
