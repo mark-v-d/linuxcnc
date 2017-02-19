@@ -351,7 +351,7 @@ static int detect_rtai() {
 static int detect_xenomai() {
     struct utsname u;
     uname(&u);
-    return strcasestr (u.release, "-xenomai") != 0;
+    return strcasestr (u.release, "-ipipe+") != 0;
 }
 #else
 static int detect_xenomai() {
