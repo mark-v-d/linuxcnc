@@ -1711,7 +1711,7 @@ def get_jog_speed_map(a):
     return get_jog_speed(a)
 
 def get_max_jog_speed(a):
-    max_linear_speed = vars.max_speed.get()
+    max_linear_speed = vars.maxvel_speed.get()
     max_linear_speed = to_internal_linear_unit(max_linear_speed)
     if vars.metric.get(): max_linear_speed = max_linear_speed * 25.4
 
