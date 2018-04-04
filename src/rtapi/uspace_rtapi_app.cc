@@ -778,12 +778,12 @@ static int harden_rt()
 
 static RtapiApp *makeApp()
 {
-    if(euid != 0 || harden_rt() < 0)
+    if(0 && (euid != 0 || harden_rt() < 0))
     {
         rtapi_print_msg(RTAPI_MSG_ERR, "Note: Using POSIX non-realtime\n");
         return new Posix(SCHED_OTHER);
     }
-    WithRoot r;
+    // WithRoot r;
     void *dll = nullptr;
     if(detect_xenomai()) {
         dll = dlopen(EMC2_HOME "/lib/libuspace-xenomai.so.0", RTLD_NOW);
